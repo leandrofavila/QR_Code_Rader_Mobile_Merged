@@ -22,8 +22,7 @@ except OSError as error:
 
 app = Flask(__name__, template_folder='./templates')
 
-camera = cv2.VideoCapture(1)
-
+camera = cv2.VideoCapture("http://192.168.137.111:8080/video")
 
 
 def record(out_):
