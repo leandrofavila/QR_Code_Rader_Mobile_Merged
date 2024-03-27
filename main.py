@@ -18,18 +18,34 @@ Screen:
     orientation: 'vertical'
     size_hint: .7, .7
     pos_hint: {'center_x': .5, 'center_y': .5}
-    
+    MDBoxLayout:
+        size_hint_y: .15
+        padding: [25, 25, 0, 25]
+        md_bg_color: app.theme_cls.primary_color
+        
+        MDLabel:
+            text: 'Mudar senha'
+        MDIconButton:
+            pos_hint: {'center_x': .9, 'center_y': .5} 
+            icon: 'close'
+            on_release: root.fechar()
+               
     MDFloatLayout: 
         MDTextField:
+            pos_hint: {'center_x': .5, 'center_y': .8}
+            size_hint_x: .9
             hint_text: 'Código enviado por email'
         MDTextField:
+            pos_hint: {'center_x': .5, 'center_y': .6}
+            size_hint_x: .9
             hint_text: 'Nova senha'
         MDTextField:
-            hint_text: 'Confirmar senha'    
-            
+            pos_hint: {'center_x': .5, 'center_y': .4}
+            size_hint_x: .9
+            hint_text: 'Confirmar senha'                
         MDRaisedButton:
             text: 'Recadastrar'
-            pos_hint: {'center_x': .5}
+            pos_hint: {'center_x': .5, 'center_y': .15}
 
 <TelaLogin@FloatLayout>:      
     MDIconButton:
@@ -68,17 +84,23 @@ Screen:
 
 
 class SenhaCard(MDCard):
-    pass
+    def fechar(self):
+        self.parent.remove_widget(self)
 
 
 class TelaLogin(FloatLayout):
     def abrir_card(self):
         self.add_widget(SenhaCard())
 
+###requirements = python3,kivy==2.3.0,kivymd==1.2.0,plyer==2.1.0
+
 
 class MyApp(MDApp):
     def build(self):
         self.theme_cls.primary_palette = 'Teal'
+        self.theme_cls.accent_palette = 'Green'
+        self.theme_cls.theme_style = 'Dark'
+        self.theme_cls.primary_hue = '500'
         return Builder.load_string(KV)
 
 
