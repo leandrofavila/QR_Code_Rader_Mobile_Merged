@@ -2,6 +2,7 @@ from kivymd.app import MDApp
 from kivymd.uix.card import MDCard
 from kivymd.uix.floatlayout import FloatLayout
 from kivy.lang import Builder
+from plyer import camera
 
 
 KV = '''
@@ -100,7 +101,7 @@ class MyApp(MDApp):
         self.theme_cls.primary_palette = 'Teal'
         self.theme_cls.accent_palette = 'Green'
         self.theme_cls.theme_style = 'Dark'
-        self.theme_cls.primary_hue = '500'
+        self.theme_cls.primary_hue = '800'
         return Builder.load_string(KV)
 
 
