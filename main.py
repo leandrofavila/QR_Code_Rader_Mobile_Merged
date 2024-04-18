@@ -79,8 +79,6 @@ Screen:
         pos_hint: {'center_x': .5, 'center_y': .25}   
         on_release: root.abrir_card()                          
 '''
-#size_hint recebe uma tupla com valor para x e y onde 1 é o valor maximo.
-
 
 
 class SenhaCard(MDCard):
@@ -92,7 +90,6 @@ class TelaLogin(FloatLayout):
     def abrir_card(self):
         self.add_widget(SenhaCard())
 
-###requirements = python3,kivy==2.3.0,kivymd==1.2.0,plyer==2.1.0
 
 
 class MyApp(MDApp):
@@ -105,4 +102,3 @@ class MyApp(MDApp):
 
 
 MyApp().run()
-
