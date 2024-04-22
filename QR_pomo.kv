@@ -1,0 +1,26 @@
+<Pomo>:
+    MDIconButton:
+        icon: 'qrcode-scan'
+        icon_size: '75sp'
+        pos_hint: {'center_x': .5, 'center_y': .8}
+    MDLabel:
+        text: root.timer_string
+        font_style: 'H1'
+        halign: 'center'
+
+    MDRaisedButton:
+        text: root.button_string
+        pos_hint: {'center_x': .5, 'center_y': .2}
+        size_hint_x: .8
+        on_release: root.click()
+
+MDBoxLayout:
+    orientation: 'vertical'
+    MDTopAppBar:
+        title: 'QR'
+        left_action_items: [['menu']]
+        right_action_items: [['theme-light-dark', lambda x: app.change_color()]]
+    Pomo
+
+
+            

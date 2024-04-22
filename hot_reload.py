@@ -3,7 +3,7 @@ from kivy.lang import Builder
 
 
 class HotReload(MDApp):
-    KV_FILES = ['app/QR_pomo.kv']
+    KV_FILES = ['QR_pomo.kv']
     DEBUG = True
 
     def build(self):
