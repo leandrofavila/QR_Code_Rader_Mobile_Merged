@@ -1,92 +1,127 @@
-from itertools import cycle
+# Kivy OpenCV Barcode Scanner
+# done by Vijeth P H 
+from kivy.app import App
+from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.image import Image
+from kivy.uix.widget import Widget
+from kivy.uix.label import Label
+from kivy.uix.button import Button
+from kivy.uix.togglebutton import ToggleButton
+from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import Clock
-from kivy.lang import Builder
-from kivy.properties import StringProperty, BooleanProperty
-from kivymd.app import MDApp
-from kivymd.uix.floatlayout import MDFloatLayout
+from kivy.graphics.texture import Texture
+from pyzbar import pyzbar
+import webbrowser
+import cv2
+
+# Create global variables, for storing and displaying barcodes
+outputtext = ''
+weblink = ''
+leb = Label(text=outputtext, size_hint_y=None, height='48dp', font_size='45dp')
+found = set()  # this will not allow duplicate barcode scans to be stored
+togglflag = True
 
 
-class Cycle:
-    def __init__(self):
-        self.cycle = cycle([
-            Timer(25), Timer(5),
-            Timer(25), Timer(5),
-            Timer(25), Timer(5),
-            Timer(30)
-        ])
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        return next(self.cycle)
-
-
-class Timer:
-    def __init__(self, time):
-        self.time = time * 60
-
-    def decrement(self):
-        self.time -= 1
-        return self.time
-
-    def __str__(self):
-        return '{:02d}:{:02d}'.format(*divmod(self.time, 60))
-
-
-class Pomo(MDFloatLayout):
-    timer_string = StringProperty('25:00')
-    button_string = StringProperty('Iniciar!')
-    running = BooleanProperty(False)
-    cycle = Cycle()
-
+class MainScreen(BoxLayout):
+    # first screen that is displayed when program is run
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._time = next(self.cycle)
-        self.timer_string = str(self._time)
+        self.orientation = 'vertical'  # vertical placing of widgets
 
-    def start(self):
-        self.button_string = 'Pausar!'
-        if not self.running:
-            self.running = True
-            Clock.schedule_interval(self.update, 1)
+        self.cam = cv2.VideoCapture(0)  # start OpenCV camera
+        self.cam.set(3, 1280)  # set resolution of camera
+        self.cam.set(4, 720)
+        self.img = Image()  # Image widget to display frames
 
-    def stop(self):
-        self.button_string = 'Reiniciar!'
-        if self.running:
-            self.running = False
+        # create Toggle Button for pause and play of video stream
+        self.togbut = ToggleButton(text='Pause', group='camstart', state='down', size_hint_y=None, height='48dp',
+                                   on_press=self.change_state)
+        self.but = Button(text='Stop', size_hint_y=None, height='48dp', on_press=self.stop_stream)
+        self.add_widget(self.img)
+        self.add_widget(self.togbut)
+        self.add_widget(self.but)
+        Clock.schedule_interval(self.update, 1.0 / 30)  # update for 30fps
 
-    def click(self):
-        if self.running:
-            self.stop()
+    # update frame of OpenCV camera
+    def update(self, dt):
+        if togglflag:
+            ret, frame = self.cam.read()  # retrieve frames from OpenCV camera
+
+            if ret:
+                buf1 = cv2.flip(frame, 0)  # convert it into texture
+                buf = buf1.tobytes()
+                image_texture = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='bgr')
+                image_texture.blit_buffer(buf, colorfmt='bgr', bufferfmt='ubyte')
+                self.img.texture = image_texture  # display image from the texture
+
+                barcodes = pyzbar.decode(frame)  # detect barcode from image
+                for barcode in barcodes:
+                    (x, y, w, h) = barcode.rect
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                    barcodeData = barcode.data.decode("utf-8")
+                    barcodeType = barcode.type
+                    weblink = barcodeData
+                    text = "{} ({})".format(barcodeData, barcodeType)
+                    cv2.putText(frame, text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                    if barcodeData not in found:  # check if detected barcode is a duplicate
+                        outputtext = text
+                        leb.text = outputtext  # display the barcode details
+                        found.add(barcodeData)
+                        self.change_screen()
+
+                key = cv2.waitKey(1) & 0xFF
+                if key == ord("q"):
+                    cv2.destroyAllWindows()
+                    exit(0)
+
+    # change state of toggle button
+    def change_state(self, *args):
+        global togglflag
+        if togglflag:
+            self.togbut.text = 'Play'
+            togglflag = False
         else:
-            self.start()
+            self.togbut.text = 'Pause'
+            togglflag = True
 
-    def update(self, *args):
-        time = self._time.decrement()
-        if time == 0:
-            self.stop()
-            self._time = next(self.cycle)
-        self.timer_string = str(self._time)
+    def stop_stream(self, *args):
+        self.cam.release()  # stop camera
+
+    def change_screen(self, *args):
+        main_app.sm.current = 'second'  # once barcode is detected, switch to second screen
 
 
-class PomoDuno(MDApp):
-    def change_color(self):
-        theme = self.theme_cls.theme_style
-        if theme == 'Dark':
-            self.theme_cls.theme_style = 'Light'
-        else:
-            self.theme_cls.theme_style = 'Dark'
+class SecondScreen(BoxLayout):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.orientation = 'vertical'
+        self.lab1 = Label(text='Output: ', size_hint_y=None, height='48dp', font_size='45dp')
+        self.but1 = Button(text='Open in Web Browser', on_press=self.open_browser, size_hint_y=None, height='48dp')
+        self.add_widget(self.lab1)
+        self.add_widget(leb)
+        self.add_widget(self.but1)
 
+    def open_browser(self, *args):
+        webbrowser.open(weblink)  # this opens link in browser
+
+
+class TestApp(App):
     def build(self):
-        self.theme_cls.primary_palette = 'DeepPurple'
-        self.theme_cls.primary_hue = '700'
-        return Builder.load_file('QR_pomo.kv')
+        self.sm = ScreenManager()  # screenmanager is used to manage screens
+        self.mainsc = MainScreen()
+        scrn = Screen(name='main')
+        scrn.add_widget(self.mainsc)
+        self.sm.add_widget(scrn)
+
+        self.secondsc = SecondScreen()
+        scrn = Screen(name='second')
+        scrn.add_widget(self.secondsc)
+        self.sm.add_widget(scrn)
+
+        return self.sm
 
 
-if __name__ == "__main__":
-    # Criar instância da classe do App
-    app = PomoDuno()
-
-    # Abrir a janela principal do Kivy
-    app.run()
+if __name__ == '__main__':
+    main_app = TestApp()
+    main_app.run()
+    cv2.destroyAllWindows()
