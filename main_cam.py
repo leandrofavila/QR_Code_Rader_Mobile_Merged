@@ -1,23 +1,28 @@
-# Kivy OpenCV Barcode Scanner
-# done by Vijeth P H 
 from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.image import Image
-from kivy.uix.widget import Widget
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import Clock
 from kivy.graphics.texture import Texture
+from kivy.core.window import Window
 from pyzbar import pyzbar
 import webbrowser
 import cv2
+import requests
+
 
 # Create global variables, for storing and displaying barcodes
 outputtext = ''
 weblink = ''
-leb = Label(text=outputtext, size_hint_y=None, height='48dp', font_size='45dp')
+leb = Label(text=outputtext,
+            size=(200, 48),
+            pos_hint={'center_x': 0.5},
+            #font_name='caminho/para/sua/fonte.ttf',
+            font_size=42  # Tamanho da fonte em pontos
+            )
 found = set()  # this will not allow duplicate barcode scans to be stored
 togglflag = True
 
@@ -28,18 +33,18 @@ class MainScreen(BoxLayout):
         super().__init__(**kwargs)
         self.orientation = 'vertical'  # vertical placing of widgets
 
-        self.cam = cv2.VideoCapture(0)  # start OpenCV camera
+        self.cam = cv2.VideoCapture("http://192.168.137.3:4747/video")  # start OpenCV camera
         self.cam.set(3, 1280)  # set resolution of camera
         self.cam.set(4, 720)
         self.img = Image()  # Image widget to display frames
 
         # create Toggle Button for pause and play of video stream
-        self.togbut = ToggleButton(text='Pause', group='camstart', state='down', size_hint_y=None, height='48dp',
-                                   on_press=self.change_state)
-        self.but = Button(text='Stop', size_hint_y=None, height='48dp', on_press=self.stop_stream)
+        #self.togbut = ToggleButton(text='Pause', group='camstart', state='down', size_hint_y=None, height='48dp',
+        #                           on_press=self.change_state)
+        #self.but = Button(text='Stop', size_hint_y=None, height='48dp', on_press=self.stop_stream)
         self.add_widget(self.img)
-        self.add_widget(self.togbut)
-        self.add_widget(self.but)
+#        self.add_widget(self.togbut)
+#        self.add_widget(self.but)
         Clock.schedule_interval(self.update, 1.0 / 30)  # update for 30fps
 
     # update frame of OpenCV camera
@@ -54,7 +59,8 @@ class MainScreen(BoxLayout):
                 image_texture.blit_buffer(buf, colorfmt='bgr', bufferfmt='ubyte')
                 self.img.texture = image_texture  # display image from the texture
 
-                barcodes = pyzbar.decode(frame)  # detect barcode from image
+                # detect barcode from image
+                barcodes = pyzbar.decode(frame)
                 for barcode in barcodes:
                     (x, y, w, h) = barcode.rect
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
@@ -87,6 +93,7 @@ class MainScreen(BoxLayout):
     def stop_stream(self, *args):
         self.cam.release()  # stop camera
 
+
     def change_screen(self, *args):
         main_app.sm.current = 'second'  # once barcode is detected, switch to second screen
 
@@ -95,14 +102,45 @@ class SecondScreen(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.orientation = 'vertical'
-        self.lab1 = Label(text='Output: ', size_hint_y=None, height='48dp', font_size='45dp')
-        self.but1 = Button(text='Open in Web Browser', on_press=self.open_browser, size_hint_y=None, height='48dp')
-        self.add_widget(self.lab1)
+
+        self.but1 = Button(text='OK',
+                           #on_press=self.make_api_request,
+                           size_hint=(None, None),
+                           # tamanho do botão
+                           size=(200, 48),
+                           pos_hint={'center_x': 0.5})
+
         self.add_widget(leb)
         self.add_widget(self.but1)
 
-    def open_browser(self, *args):
-        webbrowser.open(weblink)  # this opens link in browser
+
+
+    #   essa função deveria ter um botão que chama a mainscreen novamente
+    def return_to_main_screen(self, *args):
+        main_app.sm.current = 'MainScreen'
+
+
+
+    #def make_api_request(self, *args):
+    #    # URL da API que você deseja solicitar
+    #    api_url = 'http://sua_api.com/recurso'
+    #
+    #    # Parâmetros da solicitação, se necessário
+    #    params = {'parametro': 'valor'}
+    #
+    #    # Faça a solicitação HTTP GET
+    #    response = requests.get(api_url, params=params)
+    #
+    #    # Verifique se a solicitação foi bem-sucedida
+    #    if response.status_code == 200:
+    #        # Se a solicitação foi bem-sucedida, você pode acessar os dados da resposta
+    #        data = response.json()
+    #        # Faça o que quiser com os dados da resposta
+    #        print(data)
+    #    else:
+    #        # Se a solicitação não foi bem-sucedida, imprima o código de status da resposta
+    #        print("Erro ao fazer a solicitação. Código de status:", response.status_code)
+
 
 
 class TestApp(App):

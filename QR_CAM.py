@@ -1,7 +1,7 @@
 import cv2
 from pyzbar.pyzbar import decode
 
-url = "http://192.168.137.142:8080/video"
+url = "http://192.168.137.190:4747/video"
 cap = cv2.VideoCapture(url)
 
 while True:
