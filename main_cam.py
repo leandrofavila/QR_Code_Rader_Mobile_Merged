@@ -110,8 +110,15 @@ class SecondScreen(BoxLayout):
                            size=(200, 48),
                            pos_hint={'center_x': 0.5})
 
+        self.but2 = Button(text='Cancel',
+                           on_press=self.return_to_main_screen,
+                           size_hint=(None, None),
+                           size=(200, 48),
+                           pos_hint={'center_x': 0.5})
+
         self.add_widget(leb)
         self.add_widget(self.but1)
+        self.add_widget(self.but2)
 
 
 
