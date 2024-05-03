@@ -3,15 +3,15 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.button import Button
-from kivy.uix.togglebutton import ToggleButton
+#from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import Clock
 from kivy.graphics.texture import Texture
-from kivy.core.window import Window
+#from kivy.core.window import Window
 from pyzbar import pyzbar
-import webbrowser
+#import webbrowser
 import cv2
-import requests
+#import requests
 
 
 # Create global variables, for storing and displaying barcodes
@@ -25,6 +25,7 @@ leb = Label(text=outputtext,
             )
 found = set()  # this will not allow duplicate barcode scans to be stored
 togglflag = True
+barcodeData = ''
 
 
 class MainScreen(BoxLayout):
@@ -33,18 +34,12 @@ class MainScreen(BoxLayout):
         super().__init__(**kwargs)
         self.orientation = 'vertical'  # vertical placing of widgets
 
-        self.cam = cv2.VideoCapture("http://192.168.137.3:4747/video")  # start OpenCV camera
+        self.cam = cv2.VideoCapture("http://192.168.137.244:4747/video")  # start OpenCV camera
         self.cam.set(3, 1280)  # set resolution of camera
         self.cam.set(4, 720)
         self.img = Image()  # Image widget to display frames
 
-        # create Toggle Button for pause and play of video stream
-        #self.togbut = ToggleButton(text='Pause', group='camstart', state='down', size_hint_y=None, height='48dp',
-        #                           on_press=self.change_state)
-        #self.but = Button(text='Stop', size_hint_y=None, height='48dp', on_press=self.stop_stream)
         self.add_widget(self.img)
-#        self.add_widget(self.togbut)
-#        self.add_widget(self.but)
         Clock.schedule_interval(self.update, 1.0 / 30)  # update for 30fps
 
     # update frame of OpenCV camera
@@ -62,33 +57,21 @@ class MainScreen(BoxLayout):
                 # detect barcode from image
                 barcodes = pyzbar.decode(frame)
                 for barcode in barcodes:
+                    #print(barcode)
                     (x, y, w, h) = barcode.rect
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
                     barcodeData = barcode.data.decode("utf-8")
                     barcodeType = barcode.type
-                    weblink = barcodeData
-                    text = "{} ({})".format(barcodeData, barcodeType)
+                    #weblink = barcodeData
+                    text = f"{barcodeData}"
+                    print(text)
                     cv2.putText(frame, text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
                     if barcodeData not in found:  # check if detected barcode is a duplicate
                         outputtext = text
                         leb.text = outputtext  # display the barcode details
                         found.add(barcodeData)
-                        self.change_screen()
+                    self.change_screen()
 
-                key = cv2.waitKey(1) & 0xFF
-                if key == ord("q"):
-                    cv2.destroyAllWindows()
-                    exit(0)
-
-    # change state of toggle button
-    def change_state(self, *args):
-        global togglflag
-        if togglflag:
-            self.togbut.text = 'Play'
-            togglflag = False
-        else:
-            self.togbut.text = 'Pause'
-            togglflag = True
 
     def stop_stream(self, *args):
         self.cam.release()  # stop camera
@@ -106,58 +89,33 @@ class SecondScreen(BoxLayout):
         self.but1 = Button(text='OK',
                            #on_press=self.make_api_request,
                            size_hint=(None, None),
-                           # tamanho do botão
                            size=(200, 48),
                            pos_hint={'center_x': 0.5})
 
-        self.but2 = Button(text='Cancel',
-                           on_press=self.return_to_main_screen,
-                           size_hint=(None, None),
-                           size=(200, 48),
-                           pos_hint={'center_x': 0.5})
+        self.cancel = Button(text='Cancel',
+                            on_press=self.return_to_main_screen,
+                            size_hint=(None, None),
+                            size=(200, 48),
+                            pos_hint={'center_x': 0.5})
 
         self.add_widget(leb)
         self.add_widget(self.but1)
-        self.add_widget(self.but2)
+        self.add_widget(self.cancel)
 
 
-
-    #   essa função deveria ter um botão que chama a mainscreen novamente
     def return_to_main_screen(self, *args):
-        main_app.sm.current = 'MainScreen'
+        main_app.sm.current = 'main'
+        barcodeData = ''
 
 
 
-    #def make_api_request(self, *args):
-    #    # URL da API que você deseja solicitar
-    #    api_url = 'http://sua_api.com/recurso'
-    #
-    #    # Parâmetros da solicitação, se necessário
-    #    params = {'parametro': 'valor'}
-    #
-    #    # Faça a solicitação HTTP GET
-    #    response = requests.get(api_url, params=params)
-    #
-    #    # Verifique se a solicitação foi bem-sucedida
-    #    if response.status_code == 200:
-    #        # Se a solicitação foi bem-sucedida, você pode acessar os dados da resposta
-    #        data = response.json()
-    #        # Faça o que quiser com os dados da resposta
-    #        print(data)
-    #    else:
-    #        # Se a solicitação não foi bem-sucedida, imprima o código de status da resposta
-    #        print("Erro ao fazer a solicitação. Código de status:", response.status_code)
-
-
-
-class TestApp(App):
+class QRApp(App):
     def build(self):
-        self.sm = ScreenManager()  # screenmanager is used to manage screens
+        self.sm = ScreenManager()
         self.mainsc = MainScreen()
         scrn = Screen(name='main')
         scrn.add_widget(self.mainsc)
         self.sm.add_widget(scrn)
-
         self.secondsc = SecondScreen()
         scrn = Screen(name='second')
         scrn.add_widget(self.secondsc)
@@ -167,6 +125,6 @@ class TestApp(App):
 
 
 if __name__ == '__main__':
-    main_app = TestApp()
+    main_app = QRApp()
     main_app.run()
     cv2.destroyAllWindows()
