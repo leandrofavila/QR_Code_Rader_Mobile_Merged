@@ -3,6 +3,7 @@ from kivymd.uix.card import MDCard
 from kivymd.uix.floatlayout import FloatLayout
 from kivy.lang import Builder
 import requests
+from main_cam import MainScreen
 
 KV = '''
 Screen:
@@ -71,6 +72,12 @@ Screen:
         size_hint_y: .12
         pos_hint: {'center_x': .5, 'center_y': .4}  
         on_release: root.con_api()
+        
+    Label:
+        id: mensagem
+        text: ''  # Inicialmente vazio
+        pos_hint: {'center_x': 0.5, 'center_y': 0.2}
+        color: 1, 0, 0, 1
 
     MDLabel:
         text: 'Esqueceu sua senha?'  
@@ -99,15 +106,26 @@ class TelaLogin(FloatLayout):
         senha = self.ids.senha.text
         print(cracha, senha)
         url = f"http://10.40.3.78:7282/Login?code={str(cracha)}&password={str(senha)}"
-        response = requests.post(url)
-        if response.status_code == 200:
-            print(response.json())
-            token = response.json()['data']['token']
-            user = response.json()['data']['user']['name']
-            print(user)
-        else:
-            print("Erro ao acessar a API. Status Code:", response.status_code)
+        try:
+            response = requests.post(url)
 
+            if response.status_code == 200:
+                print(response.json())
+                token = response.json()['data']['token']
+                user = response.json()['data']['user']['name']
+                print("Token:", token)
+                print("User:", user)
+                MainScreen()
+                return response.json()
+            else:
+                print("Error Code:", response.status_code)
+                self.ids.mensagem.text = "Erro ao conectar."
+                return False
+
+        except Exception as err:
+            print("Erro:", err)
+            self.ids.mensagem.text = "Erro ao conectar, servidor ausente."
+            return False
 
 
 
